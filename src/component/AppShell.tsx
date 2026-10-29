@@ -1,79 +1,64 @@
-import React, { useState } from 'react';
-import {
-  DesktopOutlined,
-  FileOutlined,
-  PieChartOutlined,
-  TeamOutlined,
-  UserOutlined,
-} from '@ant-design/icons';
-import type { MenuProps } from 'antd';
-import { Breadcrumb, Layout, Menu, theme } from 'antd';
+import { useState } from 'react'
+import { Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { BarChartOutlined, ReadOutlined } from '@ant-design/icons'
+import type { MenuProps } from 'antd'
+import { Layout, Menu, theme } from 'antd'
 
-const { Header, Content, Footer, Sider } = Layout;
+const { Content, Sider } = Layout
 
-type MenuItem = Required<MenuProps>['items'][number];
+const navItems: MenuProps['items'] = [
+  { key: '/', icon: <BarChartOutlined />, label: '统计面板' },
+  { key: '/items', icon: <ReadOutlined />, label: '全部条目' },
+]
 
-function getItem(
-  label: React.ReactNode,
-  key: React.Key,
-  icon?: React.ReactNode,
-  children?: MenuItem[],
-): MenuItem {
-  return {
-    key,
-    icon,
-    children,
-    label,
-  } as MenuItem;
-}
-
-const items: MenuItem[] = [
-  getItem('Option 1', '1', <PieChartOutlined />),
-  getItem('Option 2', '2', <DesktopOutlined />),
-  getItem('User', 'sub1', <UserOutlined />, [
-    getItem('Tom', '3'),
-    getItem('Bill', '4'),
-    getItem('Alex', '5'),
-  ]),
-  getItem('Team', 'sub2', <TeamOutlined />, [getItem('Team 1', '6'), getItem('Team 2', '8')]),
-  getItem('Files', '9', <FileOutlined />),
-];
-
-const AppShell: React.FC = () => {
-  const [collapsed, setCollapsed] = useState(false);
+function AppShell() {
+  const [collapsed, setCollapsed] = useState(false)
+  const navigate = useNavigate()
+  const { pathname } = useLocation()
   const {
     token: { colorBgContainer, borderRadiusLG },
-  } = theme.useToken();
+  } = theme.useToken()
 
-  const currentYear = new Date().getFullYear();
+  // /items/new、/items/:id、/items/:id/edit 都归到「全部条目」下高亮
+  const selectedKey = pathname.startsWith('/items') ? '/items' : '/'
 
   return (
     <Layout style={{ minHeight: '100vh' }}>
-      <Sider collapsible collapsed={collapsed} onCollapse={(value) => setCollapsed(value)}>
-        <div className="demo-logo-vertical" />
-        <Menu theme="dark" defaultSelectedKeys={['1']} mode="inline" items={items} />
+      <Sider collapsible collapsed={collapsed} onCollapse={setCollapsed}>
+        <div
+          style={{
+            height: 48,
+            margin: 16,
+            borderRadius: 8,
+            background: 'rgba(255, 255, 255, 0.15)',
+          }}
+        />
+        <Menu
+          theme="dark"
+          mode="inline"
+          selectedKeys={[selectedKey]}
+          items={navItems}
+          onClick={({ key }) => navigate(key)}
+        />
       </Sider>
+
       <Layout>
-        <Header style={{ padding: 0, background: colorBgContainer }} />
-        <Content style={{ margin: '0 16px' }}>
-          <Breadcrumb style={{ margin: '16px 0' }} items={[{ title: 'User' }, { title: 'Bill' }]} />
+        <Content style={{ margin: 16 }}>
           <div
             style={{
               padding: 24,
-              minHeight: 360,
+              minHeight: '100%',
               background: colorBgContainer,
               borderRadius: borderRadiusLG,
             }}
           >
-            Bill is a cat.
+            {/* 子路由（页面 + 弹窗）都渲染在这里 */}
+            <Outlet />
           </div>
         </Content>
-        <Footer style={{ textAlign: 'center' }}>
-          Ant Design ©{currentYear} Created by Ant UED
-        </Footer>
       </Layout>
     </Layout>
-  );
-};
+  )
+}
 
-export default AppShell;
+export default AppShell

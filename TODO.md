@@ -20,7 +20,7 @@
 
 - 登录 / 注册 / 用户管理页面
 - 设置页、独立标签管理页
-- 图表库、UI 组件库、状态管理库、React Query
+- 图表库、状态管理库、React Query（UI 组件用已安装的 antd）
 - 封面图片上传（`cover_url` 只存外链或留空）
 
 ## 已定决策（改动需先讨论）
@@ -32,10 +32,11 @@
 | 错误响应 | `{ error: { message } }` + 恰当的 4xx / 5xx |
 | 分页 | `page` + `pageSize`；排序必须有唯一兜底（如 `completed_on DESC, id DESC`） |
 | 类型共享 | 后端 `types.ts`，前端手动对齐一份，不做共享包 |
-| 路由 | `react-router-dom`，`/items` 等见下方页面地图 |
+| 路由 | `react-router-dom` v7 `createBrowserRouter`，`/items` 等见下方页面地图 |
+| 弹窗 | **路由驱动**：`/items/new`、`/items/:id/edit` 是子路由，渲染在父页面的 `<Outlet />` 里；关闭用 `navigate('..', { replace: true })`，这样可深链、可刷新、返回键即关闭 |
 | 列表状态源 | 筛选/排序/页码全部放 URL query（`useSearchParams`），不放 `useState` |
 | 请求层 | `src/api.ts` 里一个 `request<T>()`，页面用 `useEffect + useState` 管三态 |
-| 样式 | 复用 `src/index.css` 的 CSS 变量，手写 CSS，不引组件库 |
+| 样式 | UI 用 antd v6，配合 `theme.useToken()`；不额外引图表库 |
 | 列表布局 | 卡片网格 `repeat(auto-fill, minmax(220px, 1fr))` |
 | 评分展示 | 直接显示数字（如 `9.5`），不做星星 |
 
@@ -45,24 +46,26 @@
 |---|---|---|---|
 | `/` | 统计面板 | 每月完成、评分分布、常用标签 | `GET /api/stats` |
 | `/items` | 条目列表 | 搜索/筛选/排序/分页 | `GET /api/items`、`GET /api/tags` |
-| `/items/new` | 新增条目 | 新增 | `POST /api/items` |
+| `/items/new` | 新增条目 · **弹窗**（挂在 `/items` 上） | 新增 | `POST /api/items` |
 | `/items/:id` | 条目详情 | 详情、短评、记录、编辑/删除入口 | `GET /api/items/:id`、`POST /api/items/:id/logs`、`DELETE /api/items/:id` |
-| `/items/:id/edit` | 编辑条目 | 编辑（含状态/评分/标签/完成日期） | `GET /api/items/:id`、`PUT /api/items/:id` |
+| `/items/:id/edit` | 编辑条目 · **弹窗**（挂在 `/items/:id` 上） | 编辑（含状态/评分/标签/完成日期） | `GET /api/items/:id`、`PUT /api/items/:id` |
 | `*` | 404 | — | — |
 
 ## 组件清单
 
-- [ ] `AppShell` — 左侧导航 + 内容区，含 `Outlet`
+- [x] `AppShell` — 左侧导航 + 内容区，含 `Outlet`
 - [ ] `StateView` — 统一 loading / error(带重试) / empty 三态，所有页面复用
 - [ ] `ItemCard` — 列表卡片
 - [ ] `ItemFilters` — 筛选栏，只负责写回 URL
 - [ ] `Pagination` — 页码控制
 - [ ] `TagChip` — 带颜色的标签
 - [ ] `Rating` — 评分数字展示
-- [ ] `ItemForm` — 新增/编辑共用
+- [ ] `ItemForm` — 新增/编辑共用，放在 `ItemDialog` 里
+- [x] `ItemDialog` — 路由驱动的新增/编辑弹窗（骨架已建，阶段 4/5 填表单）
+- [ ] `UnsavedChangesGuard` — 表单有改动时，Esc/点遮罩关闭前确认
 - [ ] `ActivityTimeline` / `ActivityForm` — 记录展示与新增
 - [ ] `StatBar` — 统计横条
-- [ ] `ConfirmDialog` — 删除确认
+- [ ] `ConfirmDialog` — 删除确认（可复用 antd `Modal.confirm`）
 
 ---
 
@@ -71,24 +74,28 @@
 - [x] `server/.env` 修正拼写 `DN_NAME` → `DB_NAME`
 - [ ] 在 `.gitignore` 追加 `.env`（当前数据库密码未被忽略）
 - [ ] 新增 `server/.env.example`（只放键名）
-- [ ] `vite.config.ts` 配置代理 `/api` → `http://localhost:3000`（阶段 2 前必须）
+- [ ] `vite.config.ts` 配置代理 `/api` → `http://localhost:3000`（阶段 2 前必须；端口已定为 5175 + `strictPort`）
 - [ ] 用 `server/database/schema.sql` 建库并确认种子数据可查
 - [ ] 后端 `GET /api/health` 能通，并确认连接池真的能查库（现在连接池建了但没人用）
 - [ ] 待确认：`rating DECIMAL(2,1)` 上限只有 9.9，无法存 10.0 → 是否改 `DECIMAL(3,1)`
 - [ ] 待确认：README 仍是 Vite 模板，是否改写为项目说明
+- [ ] 待确认：`ant-design@1.0.0` 疑似误装（实际用的是 `antd`），是否 `pnpm remove ant-design`
+- [ ] 待确认：`src/main.tsx` 里 `import './index.css'` 被注释，是否恢复（目前页面没有全局基础样式）
 
 ## 阶段 1 · 前端骨架
 
-- [ ] 安装 `react-router-dom`
-- [ ] `AppShell`：左侧固定导航（统计 / 列表 / 新增），移动端折叠为顶部
-- [ ] 路由配置：6 条路由（见页面地图）
-- [ ] 404 页面
-- [ ] 删掉 `App.tsx` 里的 Vite 模板欢迎页内容
+- [x] 安装 `react-router-dom`（v7）
+- [x] `AppShell`：antd `Layout` + `Sider` 折叠导航（统计面板 / 全部条目），含 `Outlet`
+- [x] 路由配置：`src/router/index.tsx`，`createBrowserRouter` + 嵌套子路由（新增/编辑为弹窗）
+- [x] 404 页面（`NotFound`，antd `Result`）
+- [x] 删掉 `App.tsx` 里的 Vite 模板欢迎页内容，改为 `RouterProvider`
+- [ ] 移动端把 Sider 折叠为顶部导航（当前只有手动折叠，没有响应式）
 
 **验收**
 
-- [ ] 每个路由都能直接访问（刷新不白屏）
-- [ ] 导航高亮跟随当前路由
+- [x] 每个路由都能直接访问（刷新不白屏）
+- [x] 导航高亮跟随当前路由（`/items/:id` 也归到「全部条目」）
+- [ ] 手动验证：`/`、`/items`、`/items/new`、`/items/1`、`/items/1/edit`、`/xxx` 六个地址
 
 ## 阶段 2 · 列表页（第一条垂直切片）
 
@@ -150,11 +157,15 @@
 - [ ] `ItemForm`：类型切换时联动显示页数 / 时长+年份
 - [ ] 状态选「已完成」时才强调完成日期
 - [ ] 标签多选 chip（先只选已有标签，不支持现场新建）
-- [ ] 字段级错误文案 + 提交中禁用 + 提交失败错误条 + 成功跳详情
+- [ ] 字段级错误文案 + 提交中禁用 + 提交失败错误条
+- [ ] 保存成功后 `navigate` 回父路由 `/items`（父页面重新挂载即自动重新请求）
+- [ ] 关闭弹窗（Esc / 遮罩 / 取消）前，若表单有改动需二次确认
 
 **验收**
 
-- [ ] 刷新新增页表单不残留脏数据
+- [ ] 点「新增条目」后 URL 变为 `/items/new`，刷新后弹窗仍在
+- [ ] 直接访问 `/items/new` 能打开弹窗
+- [ ] 按浏览器返回键 = 关闭弹窗，不会离开列表页
 - [ ] 重复提交（连点）不会产生两条记录
 
 ## 阶段 5 · 编辑与删除
@@ -167,13 +178,15 @@
 
 **前端**
 
-- [ ] `/items/:id/edit` 复用 `ItemForm`，进入时回填
+- [ ] `ItemForm` 进入编辑态时用 `GET /api/items/:id` 回填
 - [ ] 类型字段编辑时置灰不可改
 - [ ] 删除二次确认，成功后返回列表
+- [ ] 关闭弹窗前，若有改动需二次确认
 
 **验收**
 
-- [ ] 编辑保存后详情页与列表页数据一致（无缓存残留）
+- [ ] 点「编辑」后 URL 变为 `/items/:id/edit`，刷新后弹窗仍在
+- [ ] 编辑保存后详情页与列表页数据一致（弹窗关闭时父页面重新挂载并重新请求）
 - [ ] 取消删除不会发请求
 
 ## 阶段 6 · 列表搜索 / 筛选 / 排序补全
@@ -245,3 +258,4 @@
 | 日期 | 阶段 | 文件 | 🔴 | 🟡 | 🔵 | 结论 |
 |---|---|---|---|---|---|---|
 | 2026-10-28 | 阶段 0 | `server/.env` | 0 | 0 | 0 | 修正 `DN_NAME` → `DB_NAME`，已通过 |
+| 2026-10-29 | 阶段 1 | `src/App.tsx`、`src/router/index.tsx`、`src/component/AppShell.tsx`、`ItemList`、`ItemDetail`、`ItemDialog`、`DashBoard`、`NotFound` | 0 | 0 | 1 | 补齐路由：嵌套路由 + 路由驱动弹窗；`tsc` 与 `eslint` 均通过。🔵 单包体积 723 kB（antd 全量），暂不处理 |
