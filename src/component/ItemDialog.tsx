@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Alert, Form, Modal, Spin } from 'antd';
+import dayjs from 'dayjs';
 import type { Dayjs } from 'dayjs';
 import { ApiError } from '../api/client';
-import { createItem, fetchTags } from '../api/items';
-import type { CreateItemPayload, Tag } from '../api/types';
+import { createItem, fetchItem, fetchTags, updateItem } from '../api/items';
+import type { CreateItemPayload, ItemDetail, Tag } from '../api/types';
 import ItemForm from './ItemForm';
 import type { ItemFormValues } from './ItemForm';
 
@@ -50,6 +51,10 @@ function ItemDialog({ mode }: ItemDialogProps) {
   const [tagsLoading, setTagsLoading] = useState(true);
   const [tagsError, setTagsError] = useState(false);
 
+  const [item, setItem] = useState<ItemDetail | null>(null);
+  const [itemLoading, setItemLoading] = useState(mode === 'edit');
+  const [itemError, setItemError] = useState(false);
+
   const close = () => navigate('..', { replace: true });
 
   // 请求逻辑只写一份，放在 effect 里；重试通过递增 tick 重新触发。
@@ -77,6 +82,49 @@ function ItemDialog({ mode }: ItemDialogProps) {
     };
   }, [tagsTick]);
 
+  useEffect(() => {
+    if (mode !== 'edit' || !id) return;
+    let cancelled = false;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setItemLoading(true);
+    fetchItem(Number(id))
+      .then((data) => {
+        if (cancelled) return;
+        setItem(data);
+        setItemError(false);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setItemError(true);
+      })
+      .finally(() => {
+        if (cancelled) return;
+        setItemLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [mode, id]);
+
+  const initialValues: ItemFormValues | undefined = item
+    ? {
+        mediaType: item.mediaType,
+        title: item.title,
+        creator: item.creator,
+        description: item.description,
+        coverUrl: item.coverUrl,
+        status: item.status,
+        rating: item.rating,
+        review: item.review,
+        startedOn: item.startedOn ? dayjs(item.startedOn) : null,
+        completedOn: item.completedOn ? dayjs(item.completedOn) : null,
+        pageCount: item.pageCount,
+        runtimeMinutes: item.runtimeMinutes,
+        releaseYear: item.releaseYear,
+        tagIds: item.tags.map((t) => t.id),
+      }
+    : undefined;
+
   const retryTags = () => {
     setTagsLoading(true);
     setTagsError(false);
@@ -95,8 +143,13 @@ function ItemDialog({ mode }: ItemDialogProps) {
 
     setSubmitting(true);
     try {
-      const created = await createItem(toPayload(values));
-      navigate(`/items/${created.id}`, { replace: true });
+      if (mode === 'edit' && id) {
+        await updateItem(Number(id), toPayload(values));
+        navigate(`/items/${id}`, { replace: true });
+      } else {
+        const created = await createItem(toPayload(values));
+        navigate(`/items/${created.id}`, { replace: true });
+      }
     } catch (err) {
       if (err instanceof ApiError && err.fields) {
         // 后端的字段级错误 → 摆回对应的输入框
@@ -146,14 +199,21 @@ function ItemDialog({ mode }: ItemDialogProps) {
         <Alert type="error" showIcon message={serverError} style={{ marginBottom: 16 }} />
       )}
 
-      <Spin spinning={tagsLoading && tags.length === 0}>
-        <ItemForm
-          form={form}
-          tags={tags}
-          tagsLoading={tagsLoading}
-          tagsError={tagsError}
-          onRetryTags={retryTags}
-        />
+      {itemError && mode === 'edit' && (
+        <Alert type="error" showIcon message="条目加载失败" style={{ marginBottom: 16 }} />
+      )}
+      <Spin spinning={(tagsLoading && tags.length === 0) || (mode === 'edit' && itemLoading)}>
+        {(mode !== 'edit' || item) && (
+          <ItemForm
+            form={form}
+            tags={tags}
+            tagsLoading={tagsLoading}
+            tagsError={tagsError}
+            onRetryTags={retryTags}
+            initialValues={initialValues}
+            typeDisabled={mode === 'edit'}
+          />
+        )}
       </Spin>
     </Modal>
   );

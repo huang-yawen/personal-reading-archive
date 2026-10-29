@@ -73,11 +73,11 @@
 
 - [x] `server/.env` 修正拼写 `DN_NAME` → `DB_NAME`
 - [ ] 在 `.gitignore` 追加 `.env`（当前数据库密码未被忽略）
-- [ ] 新增 `server/.env.example`（只放键名）
+- [x] 新增 `server/.env.example`（只放键名）
 - [x] `vite.config.ts` 配置代理 `/api` → `http://localhost:3000`（端口已定为 5175 + `strictPort`）
 - [ ] 用 `server/database/schema.sql` 建库并确认种子数据可查
 - [ ] 后端 `GET /api/health` 能通，并确认连接池真的能查库（现在连接池建了但没人用）
-- [ ] 待确认：`rating DECIMAL(2,1)` 上限只有 9.9，无法存 10.0 → 是否改 `DECIMAL(3,1)`
+- [x] `rating` 改为 `DECIMAL(3,1)`（上限 10.0），后端校验同步为 0–10
 - [ ] 待确认：README 仍是 Vite 模板，是否改写为项目说明
 - [ ] 待确认：`ant-design@1.0.0` 疑似误装（实际用的是 `antd`），是否 `pnpm remove ant-design`
 - [ ] 待确认：`src/main.tsx` 里 `import './index.css'` 被注释，是否恢复（目前页面没有全局基础样式）
@@ -101,9 +101,9 @@
 
 **后端**
 
-- [ ] `GET /api/items`：支持 `type`、`status`、`tag`、`q`、`sort`、`page`、`pageSize`
-- [ ] 返回 `{ data, pagination }`；导航类字段（tags）一次查完，禁止 N+1
-- [ ] 全部 SQL 参数化；`page`/`pageSize` 做上下限校验
+- [x] `GET /api/items`：支持 `type`、`status`、`tag`、`q`、`sort`、`page`、`pageSize`
+- [x] 返回 `{ data, pagination }`；导航类字段（tags）一次查完，禁止 N+1
+- [x] 全部 SQL 参数化；`page`/`pageSize` 做上下限校验
 - [x] `GET /api/tags` 返回当前用户标签（`routes/tags.ts` → `database/tags.ts`）
 - [ ] 不传筛选条件时的默认排序明确（建议 `created_at DESC, id DESC`）
 
@@ -126,8 +126,8 @@
 
 **后端**
 
-- [ ] `GET /api/items/:id` 返回条目 + 标签 + 记录（按日期倒序）
-- [ ] 不存在返回 404，非法 id 返回 400
+- [x] `GET /api/items/:id` 返回条目 + 标签 + 记录（按日期倒序）
+- [x] 不存在返回 404，非法 id 返回 400
 
 **前端**
 
@@ -173,8 +173,8 @@
 
 **后端**
 
-- [ ] `PUT /api/items/:id`（或 PATCH）：同样走事务更新条目与标签关联
-- [ ] `DELETE /api/items/:id`：只删主表，关联由外键级联
+- [x] `PUT /api/items/:id`（或 PATCH）：同样走事务更新条目与标签关联
+- [x] `DELETE /api/items/:id`：只删主表，关联由外键级联
 - [ ] 越权/不存在分别返回 403 / 404
 
 **前端**

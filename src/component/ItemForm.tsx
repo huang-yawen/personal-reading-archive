@@ -56,9 +56,19 @@ type ItemFormProps = {
   tagsLoading: boolean;
   tagsError: boolean;
   onRetryTags: () => void;
+  initialValues?: ItemFormValues;
+  typeDisabled?: boolean;
 };
 
-function ItemForm({ form, tags, tagsLoading, tagsError, onRetryTags }: ItemFormProps) {
+function ItemForm({
+  form,
+  tags,
+  tagsLoading,
+  tagsError,
+  onRetryTags,
+  initialValues,
+  typeDisabled,
+}: ItemFormProps) {
   // 类型切换时「清空」另一侧字段，而不只是隐藏。
   // 光隐藏的话，残留值仍会随表单提交，后端会因为互斥校验直接 400，
   // 用户却看不到那个已经隐藏的输入框，只看到一条莫名其妙的错误。
@@ -75,11 +85,11 @@ function ItemForm({ form, tags, tagsLoading, tagsError, onRetryTags }: ItemFormP
     <Form
       form={form}
       layout="vertical"
-      initialValues={CREATE_DEFAULT_VALUES}
+      initialValues={initialValues ?? CREATE_DEFAULT_VALUES}
       onValuesChange={handleValuesChange}
     >
       <Form.Item name="mediaType" label="类型">
-        <Segmented options={TYPE_OPTIONS} block />
+        <Segmented options={TYPE_OPTIONS} block disabled={typeDisabled} />
       </Form.Item>
 
       <Form.Item name="title" label="标题" rules={[{ required: true, message: '标题不能为空' }]}>
@@ -110,10 +120,10 @@ function ItemForm({ form, tags, tagsLoading, tagsError, onRetryTags }: ItemFormP
           <Form.Item
             name="rating"
             label="评分"
-            extra="0–9.9，可留空"
-            rules={[{ type: 'number', min: 0, max: 9.9, message: '评分需在 0–9.9 之间' }]}
+            extra="0–10，可留空"
+            rules={[{ type: 'number', min: 0, max: 10, message: '评分需在 0–10 之间' }]}
           >
-            <InputNumber min={0} max={9.9} step={0.5} precision={1} style={{ width: '100%' }} placeholder="9.0" />
+            <InputNumber min={0} max={10} step={0.5} precision={1} style={{ width: '100%' }} placeholder="9.0" />
           </Form.Item>
         </Col>
         <Col span={12}>
