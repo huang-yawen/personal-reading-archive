@@ -10,6 +10,13 @@ export type MediaStatus =
   | "paused"
   | "dropped";
 
+// 标签（列表用于多选框和筛选栏）
+export interface Tag {
+  id: number;
+  name: string;
+  color: string;
+}
+
 // 新增条目时，请求体经过校验后的形态。
 // 注意：这里全部是「已校验」的原始类型，不再有空字符串，空值一律为 null。
 export interface CreateItemInput {

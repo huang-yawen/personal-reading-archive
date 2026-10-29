@@ -176,12 +176,11 @@ export function parseCreateItemInput(payload: unknown, userId: number): CreateIt
   const coverUrl = readString(payload, "coverUrl", "封面地址", 2048, errors);
   const review = readString(payload, "review", "短评", 5000, errors);
 
-  // rating 列是 DECIMAL(2,1)，MySQL 最大只能存 9.9。
-  // TODO: schema 改成 DECIMAL(3,1) 后，把这里的 9.9 改成 10。
+  // rating 列是 DECIMAL(3,1)，上限 10.0，与 schema 的 CHECK (rating <= 10) 对齐。
   const rating = readNumber(
     payload,
     "rating",
-    { label: "评分", min: 0, max: 9.9, integer: false },
+    { label: "评分", min: 0, max: 10, integer: false },
     errors,
   );
 

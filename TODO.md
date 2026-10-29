@@ -74,7 +74,7 @@
 - [x] `server/.env` 修正拼写 `DN_NAME` → `DB_NAME`
 - [ ] 在 `.gitignore` 追加 `.env`（当前数据库密码未被忽略）
 - [ ] 新增 `server/.env.example`（只放键名）
-- [ ] `vite.config.ts` 配置代理 `/api` → `http://localhost:3000`（阶段 2 前必须；端口已定为 5175 + `strictPort`）
+- [x] `vite.config.ts` 配置代理 `/api` → `http://localhost:3000`（端口已定为 5175 + `strictPort`）
 - [ ] 用 `server/database/schema.sql` 建库并确认种子数据可查
 - [ ] 后端 `GET /api/health` 能通，并确认连接池真的能查库（现在连接池建了但没人用）
 - [ ] 待确认：`rating DECIMAL(2,1)` 上限只有 9.9，无法存 10.0 → 是否改 `DECIMAL(3,1)`
@@ -104,7 +104,7 @@
 - [ ] `GET /api/items`：支持 `type`、`status`、`tag`、`q`、`sort`、`page`、`pageSize`
 - [ ] 返回 `{ data, pagination }`；导航类字段（tags）一次查完，禁止 N+1
 - [ ] 全部 SQL 参数化；`page`/`pageSize` 做上下限校验
-- [ ] `GET /api/tags` 返回当前用户标签
+- [x] `GET /api/tags` 返回当前用户标签（`routes/tags.ts` → `database/tags.ts`）
 - [ ] 不传筛选条件时的默认排序明确（建议 `created_at DESC, id DESC`）
 
 **前端**
@@ -148,25 +148,26 @@
 
 **后端**
 
-- [ ] `POST /api/items`：字段校验（必填、枚举、评分 0–10、日期先后、类型与页数/时长互斥）
-- [ ] 写条目 + 写标签关联放在**同一事务**里
-- [ ] 校验失败返回 400 且信息可读
+- [x] `POST /api/items`：字段校验（必填、枚举、评分 0–9.9、日期先后、类型与页数/时长互斥）
+- [x] 写条目 + 写标签关联放在**同一事务**里（含标签归属校验）
+- [x] 校验失败返回 400 且信息可读（带 `fields` 字段级错误）
 
 **前端**
 
-- [ ] `ItemForm`：类型切换时联动显示页数 / 时长+年份
-- [ ] 状态选「已完成」时才强调完成日期
-- [ ] 标签多选 chip（先只选已有标签，不支持现场新建）
-- [ ] 字段级错误文案 + 提交中禁用 + 提交失败错误条
-- [ ] 保存成功后 `navigate` 回父路由 `/items`（父页面重新挂载即自动重新请求）
-- [ ] 关闭弹窗（Esc / 遮罩 / 取消）前，若表单有改动需二次确认
+- [x] `ItemForm`：类型切换时联动显示页数 / 时长+年份（切类型时 `resetFields` 清空另一侧，不只做显隐）
+- [x] 状态选「已完成」时完成日期变必填，完成日期不能早于开始日期
+- [x] 标签多选（`Select mode="multiple"`，只选已有标签，不支持现场新建）
+- [x] 字段级错误文案 + 提交中 `confirmLoading` + 提交失败顶部 `Alert`
+- [x] 保存成功后 `navigate(\`/items/${id}\`, { replace: true })` 跳详情页（原定回父路由，改为跳详情，用户能立刻看到成果）
+- [x] 关闭弹窗（Esc / 遮罩 / 取消）前，若 `form.isFieldsTouched()` 有改动则二次确认
 
 **验收**
 
-- [ ] 点「新增条目」后 URL 变为 `/items/new`，刷新后弹窗仍在
-- [ ] 直接访问 `/items/new` 能打开弹窗
-- [ ] 按浏览器返回键 = 关闭弹窗，不会离开列表页
-- [ ] 重复提交（连点）不会产生两条记录
+- [x] 点「新增条目」后 URL 变为 `/items/new`，刷新后弹窗仍在（路由驱动，结构性保证）
+- [x] 直接访问 `/items/new` 能打开弹窗（HTTP 200）
+- [ ] 按浏览器返回键 = 关闭弹窗，不会离开列表页（**需你在浏览器里点**）
+- [ ] 重复提交（连点）不会产生两条记录（**需你在浏览器里点**）
+- [ ] 提交一条不存在的标签 id，确认错误被摆回标签输入框（**需你在浏览器里点**）
 
 ## 阶段 5 · 编辑与删除
 
@@ -259,3 +260,6 @@
 |---|---|---|---|---|---|---|
 | 2026-10-28 | 阶段 0 | `server/.env` | 0 | 0 | 0 | 修正 `DN_NAME` → `DB_NAME`，已通过 |
 | 2026-10-29 | 阶段 1 | `src/App.tsx`、`src/router/index.tsx`、`src/component/AppShell.tsx`、`ItemList`、`ItemDetail`、`ItemDialog`、`DashBoard`、`NotFound` | 0 | 0 | 1 | 补齐路由：嵌套路由 + 路由驱动弹窗；`tsc` 与 `eslint` 均通过。🔵 单包体积 723 kB（antd 全量），暂不处理 |
+| 2026-10-29 | 阶段 4 后端 | `server/constants.ts`、`types.ts`、`lib/errors.ts`、`lib/item-input.ts`、`database/items.ts`、`routes/items.ts`、`app.ts` | 0 | 0 | 1 | `POST /api/items` 全绿：11 条 HTTP 用例通过，事务回滚自测通过。🔵 评分上限暂定 9.9（`DECIMAL(2,1)` 限制），待改列类型 |
+| 2026-10-29 | 阶段 0/2 | `vite.config.ts`、`server/routes/tags.ts`、`server/database/tags.ts` | 0 | 0 | 0 | Vite 代理打通；`GET /api/tags` 经 5175 代理链路实测 200，POST 经代理 201、400、404 均正确 |
+| 2026-10-29 | 阶段 4 前端 | `src/api/{client,types,items}.ts`、`src/component/ItemForm.tsx`、`ItemDialog.tsx`、`eslint.config.js` | 0 | 0 | 1 | 请求层 + 表单完成，`tsc`/`vite build`/`eslint` 全绿。🔵 `eslint.config.js` 加了 `^_` 未使用参数白名单（Express 错误中间件必须 4 参）。⚠️ 编辑模式需 `GET /api/items/:id`，后端尚无 |

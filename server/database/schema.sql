@@ -28,7 +28,7 @@ CREATE TABLE IF NOT EXISTS media_items (
   description TEXT NULL,
   cover_url VARCHAR(2048) NULL,
   status ENUM('planned', 'in_progress', 'completed', 'paused', 'dropped') NOT NULL DEFAULT 'planned',
-  rating DECIMAL(2,1) NULL,
+  rating DECIMAL(3,1) NULL COMMENT '0.0-10.0',
   review TEXT NULL,
   started_on DATE NULL,
   completed_on DATE NULL,

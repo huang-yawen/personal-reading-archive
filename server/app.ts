@@ -1,5 +1,6 @@
 import express from "express";
 import itemsRouter from "./routes/items";
+import tagsRouter from "./routes/tags";
 import { ApiError } from "./lib/errors";
 
 const app = express();
@@ -10,6 +11,7 @@ app.get("/api/health", (_req, res) => {
 });
 
 app.use("/api/items", itemsRouter);
+app.use("/api/tags", tagsRouter);
 
 // 未知接口
 app.use((_req, res) => {
